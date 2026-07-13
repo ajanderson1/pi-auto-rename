@@ -19,7 +19,7 @@
 	"private": true,
 	"type": "module",
 	"engines": {
-		"node": ">=20"
+		"node": ">=22.19.0"
 	},
 	"files": [
 		"src/**/*.ts",
@@ -37,6 +37,7 @@
 		"format": "biome check --write .",
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run",
+		"test:integration": "node scripts/integration-smoke.mjs",
 		"test:watch": "vitest"
 	},
 	"peerDependencies": {

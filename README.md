@@ -12,6 +12,8 @@ The `/auto-rename` command can rename immediately. Its `model` subcommand select
 
 ## Installation
 
+Requires Node.js 22.19.0 or newer, matching Pi's runtime requirement.
+
 Add the owned Git repository to the agent-toolkit library, then project it into Pi globally:
 
 ```bash

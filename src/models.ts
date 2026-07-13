@@ -16,9 +16,14 @@ export function formatModelSpec(config: NamingModelConfig): string {
 }
 
 export function parseModelSpec(spec: string): NamingModelConfig {
-	const match = spec.trim().match(/^([^/\s]+)\/([^/\s]+)$/);
-	if (!match) throw new Error("Expected model as <provider>/<id>");
-	return { provider: match[1], id: match[2] };
+	const normalized = spec.trim();
+	const separator = normalized.indexOf("/");
+	const provider = normalized.slice(0, separator);
+	const id = normalized.slice(separator + 1);
+	if (separator <= 0 || !id || /\s/.test(provider) || /\s/.test(id)) {
+		throw new Error("Expected model as <provider>/<id>");
+	}
+	return { provider, id };
 }
 
 export function listAvailableModels(registry: Pick<ModelRegistry, "getAvailable">): ModelOption[] {

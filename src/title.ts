@@ -32,8 +32,9 @@ function stripMatchingQuotes(value: string): string {
 }
 
 export function sanitizeTitle(raw: string, maxChars = DEFAULT_MAX_TITLE_CHARS): string {
-	let title = firstNonEmptyLine(raw)
-		.replace(/^(?:#{1,6}\s*|[-*+]\s+)/, "")
+	let title = stripMatchingQuotes(firstNonEmptyLine(raw)).trim();
+	title = title
+		.replace(/^(?:#{1,6}\s*|[-*+]\s+|\d+[.)]\s+)/, "")
 		.replace(/^\*{0,2}(?:title|session(?:\s+name)?)\s*:\*{0,2}\s*/i, "")
 		.trim();
 	title = stripMatchingQuotes(title).replace(/\s+/g, " ").trim();

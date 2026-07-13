@@ -21,7 +21,14 @@ describe("model specs", () => {
 		});
 	});
 
-	test.each(["", "anthropic", "/model", "provider/", "a/b/c"])("rejects invalid model spec %j", (spec) => {
+	test("preserves slashes inside a model ID", () => {
+		expect(parseModelSpec("openrouter/anthropic/claude-sonnet-5")).toEqual({
+			provider: "openrouter",
+			id: "anthropic/claude-sonnet-5",
+		});
+	});
+
+	test.each(["", "anthropic", "/model", "provider/", "provider/model id"])("rejects invalid model spec %j", (spec) => {
 		expect(() => parseModelSpec(spec)).toThrow("Expected model as <provider>/<id>");
 	});
 });

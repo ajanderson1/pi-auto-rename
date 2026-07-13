@@ -42,6 +42,15 @@ describe("collectCompletedExchanges", () => {
 		]);
 	});
 
+	test("accepts Pi's string-form user content", () => {
+		const entries = [
+			message("user", "Name this session"),
+			message("assistant", [{ type: "text", text: "I can name it." }]),
+		];
+
+		expect(collectCompletedExchanges(entries)).toEqual([{ user: "Name this session", assistant: "I can name it." }]);
+	});
+
 	test("ignores non-text content and extension-only entries", () => {
 		const entries = [
 			message("user", [

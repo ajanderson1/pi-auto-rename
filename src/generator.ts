@@ -64,6 +64,12 @@ export async function generateSessionName(
 			),
 			timeout,
 		]);
+		if (response.stopReason === "aborted") {
+			throw new Error(response.errorMessage || "Session name generation aborted");
+		}
+		if (response.stopReason === "error") {
+			throw new Error(`Session name generation failed: ${response.errorMessage || "provider error"}`);
+		}
 		const text = response.content
 			.filter(
 				(block): block is { type: "text"; text: string } => block.type === "text" && typeof block.text === "string",

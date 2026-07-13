@@ -21,6 +21,7 @@ function messageRole(entry: SessionEntry): string | undefined {
 function messageText(entry: SessionEntry): string {
 	if (entry.type !== "message" || !("content" in entry.message)) return "";
 	const content = entry.message.content;
+	if (typeof content === "string") return content.replace(/\s+/g, " ").trim();
 	if (!Array.isArray(content)) return "";
 
 	return content

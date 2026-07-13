@@ -11,8 +11,12 @@ function model(provider = "opencode-go", id = "glm-5.2") {
 	return { provider, id, name: id } as ReturnType<ModelRegistry["getAll"]>[number];
 }
 
-function response(text: string): AssistantMessage {
-	return { content: [{ type: "text", text }] } as AssistantMessage;
+function response(
+	text: string,
+	stopReason: AssistantMessage["stopReason"] = "stop",
+	errorMessage?: string,
+): AssistantMessage {
+	return { content: [{ type: "text", text }], stopReason, errorMessage } as AssistantMessage;
 }
 
 function asComplete(fn: (...args: CompleteCall) => Promise<AssistantMessage>): CompleteFunction {
@@ -99,6 +103,22 @@ describe("generateSessionName", () => {
 				}),
 			}),
 		).rejects.toThrow("provider failed");
+	});
+
+	test("rejects partial text from a resolved provider error", async () => {
+		await expect(
+			generateSessionName(context(), { provider: "opencode-go", id: "glm-5.2" }, exchanges, {
+				complete: asComplete(async () => response("Partial title", "error", "quota exceeded")),
+			}),
+		).rejects.toThrow("Session name generation failed: quota exceeded");
+	});
+
+	test("rejects partial text from an aborted response", async () => {
+		await expect(
+			generateSessionName(context(), { provider: "opencode-go", id: "glm-5.2" }, exchanges, {
+				complete: asComplete(async () => response("Partial title", "aborted")),
+			}),
+		).rejects.toThrow("Session name generation aborted");
 	});
 
 	test("times out a stalled provider", async () => {

@@ -16,6 +16,7 @@ DEV_SERVER_CONTEXT.md
 assets/verification/
 
 # Public-repo AI assistant artifacts
+.pi-subagents/
 .claude/
 .cursor/
 .codex/

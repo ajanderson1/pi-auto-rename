@@ -21,6 +21,8 @@ describe("sanitizeTitle", () => {
 		['### Title: "Fix   auth"\nextra', "Fix auth"],
 		["- Session: `Review release workflow`", "Review release workflow"],
 		["  **Title:** Build model picker  ", "Build model picker"],
+		['"Title: Fix auth"', "Fix auth"],
+		["1. Title: Review release workflow", "Review release workflow"],
 	])("sanitises %j", (raw, expected) => {
 		expect(sanitizeTitle(raw)).toBe(expected);
 	});
