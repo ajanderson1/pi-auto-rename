@@ -52,6 +52,7 @@ describe("validateModel", () => {
 		const selected = model("google", "gemini");
 		const registry = {
 			find: vi.fn(() => selected),
+			hasConfiguredAuth: vi.fn(() => true),
 			getApiKeyAndHeaders: vi.fn(async () => ({ ok: true as const, apiKey: "secret", headers: { x: "y" } })),
 		};
 
@@ -63,7 +64,7 @@ describe("validateModel", () => {
 	});
 
 	test("rejects a model missing from the registry", async () => {
-		const registry = { find: () => undefined, getApiKeyAndHeaders: vi.fn() };
+		const registry = { find: () => undefined, hasConfiguredAuth: vi.fn(), getApiKeyAndHeaders: vi.fn() };
 
 		await expect(validateModel(registry, { provider: "missing", id: "model" })).rejects.toThrow(
 			"Naming model not found: missing/model",
@@ -71,9 +72,24 @@ describe("validateModel", () => {
 		expect(registry.getApiKeyAndHeaders).not.toHaveBeenCalled();
 	});
 
+	test("rejects a model without configured credentials", async () => {
+		const getApiKeyAndHeaders = vi.fn();
+		const registry = {
+			find: () => model("google", "gemini"),
+			hasConfiguredAuth: () => false,
+			getApiKeyAndHeaders,
+		};
+
+		await expect(validateModel(registry, { provider: "google", id: "gemini" })).rejects.toThrow(
+			"Naming model unavailable: google/gemini: no configured credentials",
+		);
+		expect(getApiKeyAndHeaders).not.toHaveBeenCalled();
+	});
+
 	test("rejects unavailable credentials without fallback", async () => {
 		const registry = {
 			find: () => model("google", "gemini"),
+			hasConfiguredAuth: () => true,
 			getApiKeyAndHeaders: async () => ({ ok: false as const, error: "Log in first" }),
 		};
 

@@ -207,4 +207,20 @@ describe("/auto-rename", () => {
 		expect(controller.getArgumentCompletions("mo")?.[0]?.value).toBe("model");
 		expect(controller.getArgumentCompletions("model anth")?.[0]?.value).toBe("model anthropic/claude-haiku-4-5");
 	});
+
+	test("picker and completions see models that become available after session start", async () => {
+		const availableModels = [{ provider: "opencode-go", id: "glm-5.2", name: "GLM 5.2" }];
+		const fakeContext = createFakeContext([], {
+			models: availableModels,
+			selected: "anthropic/claude-haiku-4-5",
+		});
+		const controller = createAutoRenameController(createFakePi().pi, dependencies());
+		await controller.refresh(fakeContext.ctx);
+		availableModels.push({ provider: "anthropic", id: "claude-haiku-4-5", name: "Haiku" });
+
+		await controller.handleCommand("model", fakeContext.ctx);
+
+		expect(fakeContext.select.mock.calls[0][1]).toContain("anthropic/claude-haiku-4-5");
+		expect(controller.getArgumentCompletions("model anth")?.[0]?.value).toBe("model anthropic/claude-haiku-4-5");
+	});
 });

@@ -15,11 +15,11 @@ integration_log="$artifacts_dir/pi-integration-smoke.log"
 mkdir -p "$artifacts_dir"
 
 run_verification() {
-  pnpm check
+  pnpm check || return
   pnpm exec pi -e ./src/index.ts --mode rpc --no-session \
-    < tests/fixtures/get-commands.rpc.jsonl > "$pi_load_log"
-  node scripts/assert-pi-load.mjs "$pi_load_log"
-  pnpm test:integration 2>&1 | tee "$integration_log"
+    < tests/fixtures/get-commands.rpc.jsonl > "$pi_load_log" || return
+  node scripts/assert-pi-load.mjs "$pi_load_log" || return
+  pnpm test:integration 2>&1 | tee "$integration_log" || return
 }
 
 if run_verification 2>&1 | tee "$log_file"; then

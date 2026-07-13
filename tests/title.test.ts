@@ -23,6 +23,7 @@ describe("sanitizeTitle", () => {
 		["  **Title:** Build model picker  ", "Build model picker"],
 		['"Title: Fix auth"', "Fix auth"],
 		["1. Title: Review release workflow", "Review release workflow"],
+		['### 1. Title: "Fix auth"', "Fix auth"],
 	])("sanitises %j", (raw, expected) => {
 		expect(sanitizeTitle(raw)).toBe(expected);
 	});
@@ -35,7 +36,7 @@ describe("sanitizeTitle", () => {
 		expect(title).toBe("Implement a deterministic automatic session naming extension");
 	});
 
-	test.each(["", "   ", "###", "Title:", "- **Title:** ``"])("rejects empty output %j", (raw) => {
+	test.each(["", "   ", "###", "1.", "Title:", "- **Title:** ``"])("rejects empty output %j", (raw) => {
 		expect(() => sanitizeTitle(raw)).toThrow("Naming model returned an empty session name");
 	});
 });

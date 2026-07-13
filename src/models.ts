@@ -34,12 +34,15 @@ export function listAvailableModels(registry: Pick<ModelRegistry, "getAvailable"
 }
 
 export async function validateModel(
-	registry: Pick<ModelRegistry, "find" | "getApiKeyAndHeaders">,
+	registry: Pick<ModelRegistry, "find" | "hasConfiguredAuth" | "getApiKeyAndHeaders">,
 	config: NamingModelConfig,
 ) {
 	const spec = formatModelSpec(config);
 	const model = registry.find(config.provider, config.id);
 	if (!model) throw new Error(`Naming model not found: ${spec}`);
+	if (!registry.hasConfiguredAuth(model)) {
+		throw new Error(`Naming model unavailable: ${spec}: no configured credentials`);
+	}
 
 	const auth = await registry.getApiKeyAndHeaders(model);
 	if (!auth.ok) throw new Error(`Naming model unavailable: ${spec}: ${auth.error}`);

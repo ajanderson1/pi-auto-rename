@@ -50,9 +50,10 @@ export function createFakeContext(entries: SessionEntry[], options: FakeContextO
 	const find = vi.fn((provider: string, id: string) =>
 		availableModels.find((model) => model.provider === provider && model.id === id),
 	);
+	const hasConfiguredAuth = vi.fn(() => true);
 	const getApiKeyAndHeaders = vi.fn(async () => ({ ok: true as const, apiKey: "secret" }));
 	const waitForIdle = vi.fn(async () => undefined);
-	const select = vi.fn(async () => options.selected);
+	const select = vi.fn(async (_title: string, _choices: string[]) => options.selected);
 	const ctx = {
 		cwd: "/tmp/project",
 		signal: undefined,
@@ -63,6 +64,7 @@ export function createFakeContext(entries: SessionEntry[], options: FakeContextO
 		modelRegistry: {
 			getAvailable: () => availableModels,
 			find,
+			hasConfiguredAuth,
 			getApiKeyAndHeaders,
 		},
 		ui: {

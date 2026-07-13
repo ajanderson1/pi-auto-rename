@@ -30,6 +30,7 @@ function context(overrides: Partial<GenerationContext> = {}): GenerationContext 
 		signal: undefined,
 		modelRegistry: {
 			find: vi.fn(() => selected),
+			hasConfiguredAuth: vi.fn(() => true),
 			getApiKeyAndHeaders: vi.fn(async () => ({
 				ok: true as const,
 				apiKey: "api-key",
@@ -62,7 +63,7 @@ describe("generateSessionName", () => {
 
 	test("rejects a missing configured model instead of falling back", async () => {
 		const ctx = context({
-			modelRegistry: { find: () => undefined, getApiKeyAndHeaders: vi.fn() },
+			modelRegistry: { find: () => undefined, hasConfiguredAuth: vi.fn(), getApiKeyAndHeaders: vi.fn() },
 		});
 		const complete = vi.fn(async (..._args: CompleteCall) => response("unused"));
 
@@ -78,6 +79,7 @@ describe("generateSessionName", () => {
 		const ctx = context({
 			modelRegistry: {
 				find: () => model(),
+				hasConfiguredAuth: () => true,
 				getApiKeyAndHeaders: async () => ({ ok: false as const, error: "No credentials" }),
 			},
 		});

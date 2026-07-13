@@ -1,4 +1,9 @@
-import type { ExtensionAPI, ExtensionCommandContext, ExtensionContext } from "@earendil-works/pi-coding-agent";
+import type {
+	ExtensionAPI,
+	ExtensionCommandContext,
+	ExtensionContext,
+	ModelRegistry,
+} from "@earendil-works/pi-coding-agent";
 import {
 	DEFAULT_CONFIG,
 	loadConfig as defaultLoadConfig,
@@ -11,7 +16,6 @@ import {
 	formatModelSpec,
 	getModelArgumentCompletions,
 	listAvailableModels,
-	type ModelOption,
 	parseModelSpec,
 	validateModel,
 } from "./models.ts";
@@ -54,7 +58,7 @@ export function createAutoRenameController(
 ): AutoRenameController {
 	let config: NamingModelConfig = { ...DEFAULT_CONFIG };
 	let hasValidConfig = false;
-	let models: ModelOption[] = [];
+	let modelRegistry: Pick<ModelRegistry, "getAvailable"> | undefined;
 	let inFlight: Promise<void> | undefined;
 
 	const notify = (ctx: ExtensionContext, message: string, level: NoticeLevel) => {
@@ -63,6 +67,7 @@ export function createAutoRenameController(
 	};
 
 	const refresh = async (ctx: ExtensionContext) => {
+		modelRegistry = ctx.modelRegistry;
 		try {
 			const loaded = await dependencies.loadConfig();
 			if (loaded.warnings.length === 0) {
@@ -72,7 +77,6 @@ export function createAutoRenameController(
 				if (!hasValidConfig) config = loaded.config;
 				for (const warning of loaded.warnings) notify(ctx, warning, "warning");
 			}
-			models = listAvailableModels(ctx.modelRegistry);
 		} catch (error) {
 			notify(ctx, `Could not refresh auto-rename configuration: ${errorMessage(error)}`, "warning");
 		}
@@ -127,9 +131,9 @@ export function createAutoRenameController(
 			notify(ctx, "Use /auto-rename model <provider>/<id>", "warning");
 			return;
 		}
-		if (models.length === 0) models = listAvailableModels(ctx.modelRegistry);
+		modelRegistry = ctx.modelRegistry;
 		const current = formatModelSpec(config);
-		const choices = models.map((model) => {
+		const choices = listAvailableModels(ctx.modelRegistry).map((model) => {
 			const spec = formatModelSpec(model);
 			return spec === current ? `${spec} (current)` : spec;
 		});
@@ -143,6 +147,7 @@ export function createAutoRenameController(
 	};
 
 	const handleCommand = async (args: string, ctx: ExtensionCommandContext) => {
+		modelRegistry = ctx.modelRegistry;
 		await ctx.waitForIdle();
 		const normalized = args.trim();
 		try {
@@ -174,7 +179,8 @@ export function createAutoRenameController(
 		handleAgentSettled,
 		handleCommand,
 		getArgumentCompletions(prefix) {
-			return getModelArgumentCompletions(prefix, models);
+			const available = modelRegistry ? listAvailableModels(modelRegistry) : [];
+			return getModelArgumentCompletions(prefix, available);
 		},
 	};
 }

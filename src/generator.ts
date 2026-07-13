@@ -16,7 +16,7 @@ export interface GenerationOptions {
 }
 
 export type GenerationContext = Pick<ExtensionContext, "cwd" | "signal"> & {
-	modelRegistry: Pick<ModelRegistry, "find" | "getApiKeyAndHeaders">;
+	modelRegistry: Pick<ModelRegistry, "find" | "hasConfiguredAuth" | "getApiKeyAndHeaders">;
 };
 
 export async function generateSessionName(
