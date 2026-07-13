@@ -1,12 +1,6 @@
 import type { ModelRegistry } from "@earendil-works/pi-coding-agent";
 import { describe, expect, test, vi } from "vitest";
-import {
-	formatModelSpec,
-	getModelArgumentCompletions,
-	listAvailableModels,
-	parseModelSpec,
-	validateModel,
-} from "../src/models.ts";
+import { formatModelSpec, getModelArgumentCompletions, parseModelSpec, validateModel } from "../src/models.ts";
 
 function model(provider: string, id: string, name = id) {
 	return { provider, id, name } as ReturnType<ModelRegistry["getAll"]>[number];
@@ -30,20 +24,6 @@ describe("model specs", () => {
 
 	test.each(["", "anthropic", "/model", "provider/", "provider/model id"])("rejects invalid model spec %j", (spec) => {
 		expect(() => parseModelSpec(spec)).toThrow("Expected model as <provider>/<id>");
-	});
-});
-
-describe("listAvailableModels", () => {
-	test("sorts authenticated models by provider and id", () => {
-		const registry = {
-			getAvailable: () => [model("google", "zeta"), model("anthropic", "sonnet"), model("google", "alpha")],
-		};
-
-		expect(listAvailableModels(registry)).toEqual([
-			{ provider: "anthropic", id: "sonnet", name: "sonnet" },
-			{ provider: "google", id: "alpha", name: "alpha" },
-			{ provider: "google", id: "zeta", name: "zeta" },
-		]);
 	});
 });
 

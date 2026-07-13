@@ -1,9 +1,4 @@
-import type {
-	ExtensionAPI,
-	ExtensionCommandContext,
-	ExtensionContext,
-	ModelRegistry,
-} from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI, ExtensionCommandContext, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import {
 	DEFAULT_CONFIG,
 	loadConfig as defaultLoadConfig,
@@ -15,10 +10,11 @@ import { generateSessionName as defaultGenerateSessionName } from "./generator.t
 import {
 	formatModelSpec,
 	getModelArgumentCompletions,
-	listAvailableModels,
+	type ModelOption,
 	parseModelSpec,
 	validateModel,
 } from "./models.ts";
+import { getCurrentSessionScopedModels } from "./session-models.ts";
 
 const USAGE = "Usage: /auto-rename [model [provider/id]]";
 type NoticeLevel = "info" | "warning" | "error";
@@ -28,6 +24,7 @@ export interface ControllerDependencies {
 	loadConfig: typeof defaultLoadConfig;
 	saveConfig: typeof defaultSaveConfig;
 	generateSessionName: typeof defaultGenerateSessionName;
+	getSessionModels: typeof getCurrentSessionScopedModels;
 	log(message: string, level: NoticeLevel): void;
 }
 
@@ -42,6 +39,7 @@ const defaultDependencies: ControllerDependencies = {
 	loadConfig: defaultLoadConfig,
 	saveConfig: defaultSaveConfig,
 	generateSessionName: defaultGenerateSessionName,
+	getSessionModels: getCurrentSessionScopedModels,
 	log(message, level) {
 		const output = level === "error" ? console.error : console.warn;
 		output(`[pi-auto-rename] ${message}`);
@@ -58,7 +56,7 @@ export function createAutoRenameController(
 ): AutoRenameController {
 	let config: NamingModelConfig = { ...DEFAULT_CONFIG };
 	let hasValidConfig = false;
-	let modelRegistry: Pick<ModelRegistry, "getAvailable"> | undefined;
+	let sessionModels: ModelOption[] = [];
 	let inFlight: Promise<void> | undefined;
 
 	const notify = (ctx: ExtensionContext, message: string, level: NoticeLevel) => {
@@ -66,8 +64,16 @@ export function createAutoRenameController(
 		else dependencies.log(message, level);
 	};
 
+	const refreshSessionModels = async (ctx: ExtensionContext) => {
+		try {
+			sessionModels = await dependencies.getSessionModels(ctx);
+		} catch (error) {
+			sessionModels = [];
+			notify(ctx, `Could not read the current session model scope: ${errorMessage(error)}`, "warning");
+		}
+	};
+
 	const refresh = async (ctx: ExtensionContext) => {
-		modelRegistry = ctx.modelRegistry;
 		try {
 			const loaded = await dependencies.loadConfig();
 			if (loaded.warnings.length === 0) {
@@ -80,6 +86,7 @@ export function createAutoRenameController(
 		} catch (error) {
 			notify(ctx, `Could not refresh auto-rename configuration: ${errorMessage(error)}`, "warning");
 		}
+		await refreshSessionModels(ctx);
 	};
 
 	const runGeneration = async (
@@ -96,8 +103,9 @@ export function createAutoRenameController(
 			try {
 				const title = await dependencies.generateSessionName(ctx, config, exchanges);
 				if (mode === "automatic" && pi.getSessionName()) return;
-				pi.setSessionName(title);
-				notify(ctx, `Session named: ${title}`, "info");
+				const sessionName = title.toUpperCase();
+				pi.setSessionName(sessionName);
+				notify(ctx, `Session named: ${sessionName}`, "info");
 			} catch (error) {
 				const prefix = mode === "automatic" ? "Auto-rename failed" : "Could not rename session";
 				notify(ctx, `${prefix}: ${errorMessage(error)}`, "warning");
@@ -131,14 +139,14 @@ export function createAutoRenameController(
 			notify(ctx, "Use /auto-rename model <provider>/<id>", "warning");
 			return;
 		}
-		modelRegistry = ctx.modelRegistry;
+		await refreshSessionModels(ctx);
 		const current = formatModelSpec(config);
-		const choices = listAvailableModels(ctx.modelRegistry).map((model) => {
+		const choices = sessionModels.map((model) => {
 			const spec = formatModelSpec(model);
 			return spec === current ? `${spec} (current)` : spec;
 		});
 		if (choices.length === 0) {
-			notify(ctx, "No authenticated models are available", "warning");
+			notify(ctx, "No models are scoped in the current Pi session", "warning");
 			return;
 		}
 		const choice = await ctx.ui.select("Choose auto-rename model", choices);
@@ -147,7 +155,6 @@ export function createAutoRenameController(
 	};
 
 	const handleCommand = async (args: string, ctx: ExtensionCommandContext) => {
-		modelRegistry = ctx.modelRegistry;
 		await ctx.waitForIdle();
 		const normalized = args.trim();
 		try {
@@ -179,8 +186,7 @@ export function createAutoRenameController(
 		handleAgentSettled,
 		handleCommand,
 		getArgumentCompletions(prefix) {
-			const available = modelRegistry ? listAvailableModels(modelRegistry) : [];
-			return getModelArgumentCompletions(prefix, available);
+			return getModelArgumentCompletions(prefix, sessionModels);
 		},
 	};
 }

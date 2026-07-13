@@ -10,7 +10,7 @@ R0 is the highest supported rung. The extension has no browser or other visual s
 
 ## Fixtures
 
-Unit tests use in-memory Pi API/context fakes and temporary directories. `tests/fixtures/get-commands.rpc.jsonl` drives real Pi RPC command discovery. `scripts/integration-smoke.mjs` runs Pi against a deterministic in-process faux provider, selects that naming model, completes four exchanges, and verifies the session is named exactly once after exchange three. Automated tests make no network calls.
+Unit tests use in-memory Pi API/context fakes and temporary directories. `tests/fixtures/get-commands.rpc.jsonl` drives real Pi RPC command discovery against an isolated `PI_CODING_AGENT_DIR`, preventing the globally installed copy from colliding with the source under test. `scripts/integration-smoke.mjs` runs Pi against a deterministic in-process faux provider, verifies the picker excludes an authenticated but unscoped model, selects the scoped naming model, completes four exchanges, and verifies the session is named in ALL CAPS exactly once after exchange three. Automated tests make no network calls.
 
 ## Escalation
 

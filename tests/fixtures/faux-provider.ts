@@ -47,6 +47,17 @@ export default function fauxProvider(pi: ExtensionAPI) {
 				contextWindow: model.contextWindow,
 				maxTokens: model.maxTokens,
 			},
+			{
+				id: "unscoped",
+				name: "Unscoped Test Model",
+				api: "openai-completions",
+				baseUrl: model.baseUrl,
+				reasoning: model.reasoning,
+				input: model.input,
+				cost: model.cost,
+				contextWindow: model.contextWindow,
+				maxTokens: model.maxTokens,
+			},
 		],
 	});
 }

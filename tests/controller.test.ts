@@ -18,6 +18,13 @@ function dependencies(overrides: Partial<ControllerDependencies> = {}): Controll
 		loadConfig: vi.fn(async () => ({ config: { ...DEFAULT_CONFIG }, warnings: [] })),
 		saveConfig: vi.fn(async () => undefined),
 		generateSessionName: vi.fn(async () => "Generated Session Name"),
+		getSessionModels: vi.fn(async (ctx) =>
+			ctx.modelRegistry.getAvailable().map((model: { provider: string; id: string; name?: string }) => ({
+				provider: model.provider,
+				id: model.id,
+				name: model.name ?? model.id,
+			})),
+		),
 		log: vi.fn(),
 		...overrides,
 	};
@@ -44,9 +51,9 @@ describe("automatic rename", () => {
 		await controller.handleAgentSettled(fakeContext.ctx);
 
 		expect(deps.generateSessionName).toHaveBeenCalledOnce();
-		expect(fakePi.currentName()).toBe("Generated Session Name");
+		expect(fakePi.currentName()).toBe("GENERATED SESSION NAME");
 		expect(fakeContext.notifications).toContainEqual({
-			message: "Session named: Generated Session Name",
+			message: "Session named: GENERATED SESSION NAME",
 			level: "info",
 		});
 	});
@@ -88,7 +95,7 @@ describe("automatic rename", () => {
 		await controller.handleAgentSettled(fakeContext.ctx);
 
 		expect(generate).toHaveBeenCalledTimes(2);
-		expect(fakePi.currentName()).toBe("Retry Name");
+		expect(fakePi.currentName()).toBe("RETRY NAME");
 		expect(fakeContext.notifications[0]).toEqual({
 			message: "Auto-rename failed: provider failed",
 			level: "warning",
@@ -108,7 +115,7 @@ describe("automatic rename", () => {
 		result.resolve("Only Name");
 		await Promise.all([first, second]);
 
-		expect(fakePi.currentName()).toBe("Only Name");
+		expect(fakePi.currentName()).toBe("ONLY NAME");
 	});
 });
 
@@ -122,7 +129,7 @@ describe("/auto-rename", () => {
 		await controller.handleCommand("", fakeContext.ctx);
 
 		expect(fakeContext.waitForIdle).toHaveBeenCalledOnce();
-		expect(fakePi.currentName()).toBe("New Name");
+		expect(fakePi.currentName()).toBe("NEW NAME");
 	});
 
 	test("does not call the model without a completed exchange", async () => {
@@ -149,6 +156,32 @@ describe("/auto-rename", () => {
 		expect(fakeContext.select).toHaveBeenCalledOnce();
 		expect(deps.saveConfig).toHaveBeenCalledWith({ provider: "anthropic", id: "claude-haiku-4-5" });
 		expect(fakeContext.notifications.at(-1)?.message).toBe("Auto-rename model: anthropic/claude-haiku-4-5");
+	});
+
+	test("limits the picker to models scoped in the current Pi session", async () => {
+		const fakePi = createFakePi();
+		const deps = dependencies({
+			getSessionModels: vi.fn(async () => [{ provider: "opencode-go", id: "glm-5.2", name: "GLM 5.2" }]),
+		});
+		const controller = createAutoRenameController(fakePi.pi, deps);
+		const fakeContext = createFakeContext([], { selected: "opencode-go/glm-5.2 (current)" });
+		await controller.refresh(fakeContext.ctx);
+
+		await controller.handleCommand("model", fakeContext.ctx);
+
+		expect(fakeContext.select).toHaveBeenCalledWith("Choose auto-rename model", ["opencode-go/glm-5.2 (current)"]);
+		expect(controller.getArgumentCompletions("model anth")).toBeNull();
+	});
+
+	test("warns instead of falling back when the session has no scoped models", async () => {
+		const deps = dependencies({ getSessionModels: vi.fn(async () => []) });
+		const controller = createAutoRenameController(createFakePi().pi, deps);
+		const fakeContext = createFakeContext([]);
+
+		await controller.handleCommand("model", fakeContext.ctx);
+
+		expect(fakeContext.select).not.toHaveBeenCalled();
+		expect(fakeContext.notifications.at(-1)?.message).toBe("No models are scoped in the current Pi session");
 	});
 
 	test("accepts a direct provider/model selection", async () => {

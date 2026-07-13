@@ -15,7 +15,8 @@
 - Manual `/auto-rename` requires one completed exchange and may overwrite an existing name.
 - Default naming model is exactly `opencode-go/glm-5.2`; missing models or credentials fail visibly with no fallback.
 - Configuration path is exactly `~/.pi/agent/auto-rename.json`, written atomically.
-- Generated names are 3–8 words when the model complies and are sanitised to one line and at most 60 characters.
+- Generated names are 3–8 words when the model complies, sanitised to one line and at most 60 characters, then applied in ALL CAPS.
+- The interactive naming-model picker and completions offer only models scoped into the current Pi session; direct exact input remains supported.
 - Model calls time out after 15 seconds and respect cancellation.
 - The extension changes Pi session display names only, never terminal/cmux titles.
 - Every authored commit includes `Device: $(hostname -s)`.
@@ -34,7 +35,8 @@
 - `src/config.ts` — config path, parsing, loading, and atomic saving.
 - `src/conversation.ts` — completed-exchange extraction and bounded text conversion.
 - `src/title.ts` — prompt construction and title sanitisation.
-- `src/models.ts` — registry listing, model parsing, validation, selection data, and completions.
+- `src/models.ts` — model parsing, validation, selection data, and completions.
+- `src/session-models.ts` — current-session model-scope discovery and resolution.
 - `src/generator.ts` — authenticated, timeout-bound title model call.
 - `src/controller.ts` — automatic/manual orchestration with deduplication and late-name protection.
 - `src/index.ts` — Pi event and command registration only.
@@ -191,7 +193,8 @@ Expected: tests and checks pass before commit.
 - Create: `tests/generator.test.ts`
 
 **Interfaces:**
-- Produces: `formatModelSpec(config)`, `parseModelSpec(spec)`, `listAvailableModels(registry)`, `validateModel(registry, config)`, and `getModelArgumentCompletions(prefix, models)`.
+- Produces: `formatModelSpec(config)`, `parseModelSpec(spec)`, `validateModel(registry, config)`, and `getModelArgumentCompletions(prefix, models)`.
+- Produces: `getSessionModelPatterns(argv, enabledModels)` and `listSessionScopedModels(registry, patterns)`.
 - Produces: `generateSessionName(ctx, config, exchanges, options?)` returning a sanitised string.
 - `options.complete` and `options.timeoutMs` allow deterministic tests without network calls.
 
@@ -204,7 +207,7 @@ Expected: FAIL because `src/models.ts` is missing.
 
 - [ ] **Step 2: Implement model helpers**
 
-Use `ModelRegistry.getAvailable()` for picker/completion data, `find(provider, id)` for exact lookup, and `getApiKeyAndHeaders(model)` for live credential validation. Do not substitute `ctx.model` or any other model.
+Resolve picker/completion data from the current session's `--models` argument or effective `enabledModels` configuration, using Pi's model-scope resolver. Use `find(provider, id)` for exact lookup and `getApiKeyAndHeaders(model)` for live credential validation. Do not substitute `ctx.model` or any other model.
 
 - [ ] **Step 3: Verify model helpers green**
 
@@ -266,7 +269,7 @@ Expected: new command tests fail for missing behavior.
 
 - [ ] **Step 4: Implement command behavior**
 
-Use exact usage text `Usage: /auto-rename [model [provider/id]]`. The picker items are `provider/id` strings sorted deterministically, with ` (current)` appended only to the displayed label. Direct selection stores the raw provider/id pair. In UI-less mode, `model` emits `Use /auto-rename model <provider>/<id>` through the controller logger.
+Use exact usage text `Usage: /auto-rename [model [provider/id]]`. The picker items are session-scoped `provider/id` strings sorted deterministically, with ` (current)` appended only to the displayed label; an empty scope must not fall back to the full registry. Direct selection stores the raw provider/id pair. In UI-less mode, `model` emits `Use /auto-rename model <provider>/<id>` through the controller logger.
 
 - [ ] **Step 5: Write failing registration test**
 

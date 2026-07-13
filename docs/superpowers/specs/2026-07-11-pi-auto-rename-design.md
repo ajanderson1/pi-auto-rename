@@ -17,6 +17,7 @@ The extension only manages Pi session display names. It does not change terminal
 
 - A completed exchange is one user message followed by the assistant run settling. Internal model/tool-loop turns do not count as separate exchanges.
 - After the third completed exchange, the extension generates a name if the current session remains unnamed.
+- Every generated name is converted to ALL CAPS immediately before it is applied.
 - Automatic rename never overwrites a name set manually or by another extension.
 - If generation fails, the extension leaves the session unnamed, shows a warning when UI is available, and retries after a later completed exchange.
 - Resuming an unnamed session that already has at least three completed exchanges does not trigger work at startup; it becomes eligible after the next completed exchange.
@@ -29,7 +30,9 @@ The extension only manages Pi session display names. It does not change terminal
 
 ### `/auto-rename model`
 
-- With exactly `model`, open an interactive picker containing models available through Pi's model registry.
+- With exactly `model`, open an interactive picker containing only models scoped into the current Pi session.
+- Resolve that scope from the session's `--models` argument when present; otherwise use Pi's effective `enabledModels` configuration.
+- Never fall back to the full model registry when the session scope is empty.
 - Mark the currently configured naming model in the picker.
 - Persist the chosen provider and model ID globally.
 - When no interactive UI exists, explain that the direct form is required.
@@ -39,7 +42,7 @@ The extension only manages Pi session display names. It does not change terminal
 - Validate the exact provider/model pair against Pi's model registry.
 - Verify that credentials are available before persisting it.
 - Reject invalid or unavailable models loudly and keep the previous configuration.
-- Command argument completion offers `model`, then available `provider/id` values.
+- Command argument completion offers `model`, then scoped `provider/id` values. Direct input may still select an exact unscoped model.
 
 ## Naming model and configuration
 
@@ -75,7 +78,7 @@ The generated name is sanitised before applying it:
 5. truncate to 60 characters at a word boundary when possible;
 6. reject an empty result.
 
-The model request has a 15-second timeout and is abort-aware. The extension calls Pi's model registry for the exact configured model and credentials, invokes `complete()` from `@earendil-works/pi-ai`, and applies a successful result with `pi.setSessionName()`.
+After sanitisation, the controller converts the result to ALL CAPS at the final application boundary. The model request has a 15-second timeout and is abort-aware. The extension calls Pi's model registry for the exact configured model and credentials, invokes `complete()` from `@earendil-works/pi-ai`, and applies a successful result with `pi.setSessionName()`.
 
 ## Components
 
@@ -84,7 +87,8 @@ The model request has a 15-second timeout and is abort-aware. The extension call
 - `src/conversation.ts` — active-branch completed-exchange extraction and bounded naming context.
 - `src/generator.ts` — exact-model resolution, authenticated model call, timeout, and output extraction.
 - `src/title.ts` — prompt construction and deterministic title sanitisation.
-- `src/model-picker.ts` — available-model enumeration, picker labels, validation, and completion items.
+- `src/models.ts` — exact model parsing, validation, and completion items.
+- `src/session-models.ts` — current-session scope discovery and scoped-model resolution.
 
 Each component exposes a narrow interface and is unit-testable without launching Pi.
 
@@ -95,7 +99,7 @@ Each component exposes a narrow interface and is unit-testable without launching
 3. It exits when fewer than three exist, a session name already exists, or generation is already in flight.
 4. It resolves the configured model and credentials, builds bounded context, and generates a title.
 5. It rechecks that the session is still unnamed before applying the automatic result, preventing a late model response from overwriting a name set while generation was running.
-6. It applies the title with `pi.setSessionName()` and notifies the user when UI is available.
+6. It uppercases the title, applies it with `pi.setSessionName()`, and notifies the user when UI is available.
 
 The command flow reuses the same generator but deliberately permits replacement of an existing name. Commands wait for Pi to become idle before reading the branch or mutating the session.
 
@@ -123,7 +127,7 @@ Automated tests cover:
 - automatic mode protects existing names and rechecks before apply;
 - manual mode can replace an existing name and works with fewer than three exchanges;
 - zero-exchange manual invocation performs no model call;
-- command parsing and autocomplete for `model` and direct model IDs;
+- command parsing, session-scoped picker/completion filtering, and direct model IDs;
 - model selection validation and persistence rollback on failure;
 - malformed config behavior and atomic writes;
 - prompt bounding and exclusion of non-text content;
@@ -136,7 +140,6 @@ An integration harness loads the built extension through Pi, verifies `/auto-ren
 ## Out of scope
 
 - Project-local configuration.
-- Per-session model overrides.
 - Renaming terminal tabs or cmux workspaces.
 - Periodic renaming after the initial automatic name.
 - Automatic fallback to another model.
