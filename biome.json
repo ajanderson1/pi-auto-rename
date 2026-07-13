@@ -1,5 +1,8 @@
 {
 	"$schema": "https://biomejs.dev/schemas/2.5.3/schema.json",
+	"files": {
+		"includes": ["**", "!!.worktrees", "!!.pi-subagents", "!!assets/verification"]
+	},
 	"formatter": {
 		"enabled": true,
 		"indentStyle": "tab",
