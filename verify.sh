@@ -7,4 +7,15 @@ if [[ "$rung" != "0" ]]; then
   exit 2
 fi
 
-pnpm check
+artifacts_dir="${ARTIFACTS_DIR:-assets/verification}/0"
+log_file="$artifacts_dir/verify.log"
+verdict_file="$artifacts_dir/verdict.md"
+mkdir -p "$artifacts_dir"
+
+if pnpm check 2>&1 | tee "$log_file"; then
+  printf 'PASS — R0 lint, strict types, and tests pass.\n' > "$verdict_file"
+else
+  status=$?
+  printf 'FAIL — R0 verification failed; inspect verify.log.\n' > "$verdict_file"
+  exit "$status"
+fi
