@@ -1,0 +1,33 @@
+# Dependencies and build output
+node_modules/
+dist/
+coverage/
+
+# Local env
+.env
+.env.local
+.env.*.local
+
+# Ephemeral dev-server state
+DEV_SERVER_CONTEXT.md
+
+# Worktrees and verification evidence
+.worktrees/
+assets/verification/
+
+# Public-repo AI assistant artifacts
+.claude/
+.cursor/
+.codex/
+.opencode/
+.aider*
+CLAUDE.md
+CLAUDE.local.md
+*.local.md
+GEMINI.md
+
+# OS and editors
+.DS_Store
+.vscode/
+.idea/
+*.swp
