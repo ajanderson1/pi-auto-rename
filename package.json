@@ -1,0 +1,54 @@
+{
+	"name": "@ajanderson1/pi-auto-rename",
+	"version": "0.1.0",
+	"description": "Automatically name Pi sessions after three completed exchanges.",
+	"keywords": [
+		"pi",
+		"pi-extension",
+		"pi-package",
+		"session",
+		"rename"
+	],
+	"homepage": "https://github.com/ajanderson1/pi-auto-rename#readme",
+	"license": "MIT",
+	"author": "AJ Anderson",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/ajanderson1/pi-auto-rename.git"
+	},
+	"private": true,
+	"type": "module",
+	"engines": {
+		"node": ">=20"
+	},
+	"files": [
+		"src/**/*.ts",
+		"README.md",
+		"LICENSE"
+	],
+	"pi": {
+		"extensions": [
+			"./src/index.ts"
+		]
+	},
+	"scripts": {
+		"check": "pnpm lint && pnpm typecheck && pnpm test",
+		"lint": "biome check .",
+		"format": "biome check --write .",
+		"typecheck": "tsc --noEmit",
+		"test": "vitest run",
+		"test:watch": "vitest"
+	},
+	"peerDependencies": {
+		"@earendil-works/pi-ai": "*",
+		"@earendil-works/pi-coding-agent": "*"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.5.3",
+		"@earendil-works/pi-ai": "^0.80.6",
+		"@earendil-works/pi-coding-agent": "^0.80.6",
+		"@types/node": "^26.1.1",
+		"typescript": "^7.0.2",
+		"vitest": "^4.1.10"
+	}
+}
