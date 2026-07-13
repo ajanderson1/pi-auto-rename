@@ -59,6 +59,7 @@ export function createFakeContext(entries: SessionEntry[], options: FakeContextO
 		signal: undefined,
 		hasUI: options.hasUI ?? true,
 		mode: options.hasUI === false ? "print" : "tui",
+		isProjectTrusted: () => true,
 		waitForIdle,
 		sessionManager: { getBranch: () => entries },
 		modelRegistry: {

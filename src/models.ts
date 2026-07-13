@@ -26,13 +26,6 @@ export function parseModelSpec(spec: string): NamingModelConfig {
 	return { provider, id };
 }
 
-export function listAvailableModels(registry: Pick<ModelRegistry, "getAvailable">): ModelOption[] {
-	return registry
-		.getAvailable()
-		.map((model) => ({ provider: model.provider, id: model.id, name: model.name ?? model.id }))
-		.sort((left, right) => formatModelSpec(left).localeCompare(formatModelSpec(right)));
-}
-
 export async function validateModel(
 	registry: Pick<ModelRegistry, "find" | "hasConfiguredAuth" | "getApiKeyAndHeaders">,
 	config: NamingModelConfig,

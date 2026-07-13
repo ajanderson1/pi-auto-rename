@@ -22,6 +22,8 @@ const child = spawn(
 		"auto-rename-test",
 		"--model",
 		"title",
+		"--models",
+		"auto-rename-test/title",
 	],
 	{
 		cwd: process.cwd(),
@@ -34,6 +36,7 @@ let stdoutBuffer = "";
 let stderr = "";
 let sequence = 0;
 let settledCount = 0;
+let pickerOptions;
 const pendingResponses = new Map();
 const settledWaiters = [];
 
@@ -62,6 +65,14 @@ function handleMessage(message) {
 			if (message.success) pending.resolve(message);
 			else pending.reject(new Error(message.error ?? `RPC command ${message.command} failed`));
 		}
+	}
+	if (
+		message.type === "extension_ui_request" &&
+		message.method === "select" &&
+		message.title === "Choose auto-rename model"
+	) {
+		pickerOptions = message.options;
+		child.stdin.write(`${JSON.stringify({ type: "extension_ui_response", id: message.id, cancelled: true })}\n`);
 	}
 	if (message.type === "agent_settled") {
 		settledCount += 1;
@@ -123,23 +134,32 @@ try {
 	if (!autoRename) throw new Error("auto-rename command was not registered");
 
 	await send({ type: "prompt", message: "/auto-rename model auto-rename-test/title" });
+	await send({ type: "prompt", message: "/auto-rename model" });
+	if (JSON.stringify(pickerOptions) !== JSON.stringify(["auto-rename-test/title (current)"])) {
+		throw new Error(`Expected only the session-scoped naming model, received ${JSON.stringify(pickerOptions)}`);
+	}
 	await prompt("First request", 1);
 	await prompt("Second request", 2);
 	await prompt("Third request", 3);
 
 	const afterThird = await send({ type: "get_state" });
-	if (afterThird.data.sessionName !== "Integration Auto Rename") {
+	if (afterThird.data.sessionName !== "INTEGRATION AUTO RENAME") {
 		throw new Error(`Expected automatic name after three exchanges, received ${afterThird.data.sessionName ?? "none"}`);
 	}
 
 	await prompt("Fourth request", 4);
 	const afterFourth = await send({ type: "get_state" });
-	if (afterFourth.data.sessionName !== "Integration Auto Rename") {
+	if (afterFourth.data.sessionName !== "INTEGRATION AUTO RENAME") {
 		throw new Error(`Automatic name changed after a fourth exchange: ${afterFourth.data.sessionName ?? "none"}`);
 	}
 
 	process.stdout.write(
-		`${JSON.stringify({ command: autoRename.name, sessionName: afterFourth.data.sessionName, exchanges: 4 })}\n`,
+		`${JSON.stringify({
+			command: autoRename.name,
+			pickerOptions,
+			sessionName: afterFourth.data.sessionName,
+			exchanges: 4,
+		})}\n`,
 	);
 } finally {
 	clearTimeout(timeout);

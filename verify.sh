@@ -12,11 +12,14 @@ log_file="$artifacts_dir/verify.log"
 verdict_file="$artifacts_dir/verdict.md"
 pi_load_log="$artifacts_dir/pi-load-smoke.log"
 integration_log="$artifacts_dir/pi-integration-smoke.log"
+pi_agent_dir="$artifacts_dir/pi-agent"
 mkdir -p "$artifacts_dir"
+rm -rf "$pi_agent_dir"
+mkdir -p "$pi_agent_dir"
 
 run_verification() {
   pnpm check || return
-  pnpm exec pi -e ./src/index.ts --mode rpc --no-session \
+  PI_CODING_AGENT_DIR="$pi_agent_dir" pnpm exec pi -e ./src/index.ts --mode rpc --no-session \
     < tests/fixtures/get-commands.rpc.jsonl > "$pi_load_log" || return
   node scripts/assert-pi-load.mjs "$pi_load_log" || return
   pnpm test:integration 2>&1 | tee "$integration_log" || return

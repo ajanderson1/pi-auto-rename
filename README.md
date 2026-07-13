@@ -6,9 +6,9 @@ Automatically give Pi sessions concise, useful names after three completed excha
 
 ## Overview
 
-Pi Auto Rename names an unnamed session once it has enough context: three completed user→assistant exchanges. Internal tool loops do not inflate the count, and automatic naming never overwrites a name you or another extension already set.
+Pi Auto Rename names an unnamed session once it has enough context: three completed user→assistant exchanges. Internal tool loops do not inflate the count, automatic naming never overwrites a name you or another extension already set, and every generated name is applied in ALL CAPS.
 
-The `/auto-rename` command can rename immediately. Its `model` subcommand selects the exact model used for naming. There is no silent fallback to the active conversation model.
+The `/auto-rename` command can rename immediately. Its `model` subcommand selects the exact model used for naming from the models scoped into the current Pi session. There is no silent fallback to the active conversation model.
 
 ## Installation
 
@@ -46,7 +46,7 @@ To rename immediately after at least one completed exchange:
 | Command | Behavior |
 |---|---|
 | `/auto-rename` | Generate a name now; may replace the current session name. |
-| `/auto-rename model` | Open an interactive picker and persist the naming model. |
+| `/auto-rename model` | Pick from the current Pi session's scoped models and persist the naming model. |
 | `/auto-rename model provider/id` | Validate and persist an exact model directly. |
 
 Examples:
@@ -56,6 +56,8 @@ Examples:
 /auto-rename model opencode-go/glm-5.2
 /auto-rename model anthropic/claude-haiku-4-5
 ```
+
+The picker mirrors Pi's session scope: `--models` when supplied, otherwise the effective `enabledModels` configuration. It never expands to the full model registry. Direct `provider/id` input remains available for an exact model that is not in the picker.
 
 Automatic generation retries after a later completed exchange if a provider call fails. A late automatic result rechecks the current session name before applying, so a manual name always wins.
 
@@ -74,7 +76,7 @@ Global configuration lives at `~/.pi/agent/auto-rename.json`:
 
 ## Architecture
 
-The extension separates branch extraction, title formatting, model resolution, generation, persistence, and Pi event wiring into focused modules under `src/`. See the [approved design](docs/superpowers/specs/2026-07-11-pi-auto-rename-design.md) for behavior and failure semantics.
+The extension separates branch extraction, title formatting, session-scope resolution, model validation, generation, persistence, and Pi event wiring into focused modules under `src/`. See the [approved design](docs/superpowers/specs/2026-07-11-pi-auto-rename-design.md) for behavior and failure semantics.
 
 ## Contributing
 
