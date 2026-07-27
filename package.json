@@ -45,10 +45,10 @@
 		"@earendil-works/pi-coding-agent": "*"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "^2.5.3",
-		"@earendil-works/pi-ai": "^0.80.6",
-		"@earendil-works/pi-coding-agent": "^0.80.6",
-		"@types/node": "^26.1.1",
+		"@biomejs/biome": "^2.5.5",
+		"@earendil-works/pi-ai": "^0.82.1",
+		"@earendil-works/pi-coding-agent": "^0.82.1",
+		"@types/node": "^26.1.2",
 		"typescript": "^7.0.2",
 		"vitest": "^4.1.10"
 	}
