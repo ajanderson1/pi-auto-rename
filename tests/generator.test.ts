@@ -132,6 +132,26 @@ describe("generateSessionName", () => {
 		).rejects.toThrow("Session name generation timed out after 5ms");
 	});
 
+	test("allows a provider response after 30 seconds using the default timeout", async () => {
+		vi.useFakeTimers();
+		try {
+			const pendingTitle = generateSessionName(context(), { provider: "opencode-go", id: "glm-5.2" }, exchanges, {
+				complete: asComplete(
+					async () =>
+						new Promise((resolve) => {
+							setTimeout(() => resolve(response("K2 Auto Rename")), 30_000);
+						}),
+				),
+			});
+
+			const expectation = expect(pendingTitle).resolves.toBe("K2 Auto Rename");
+			await vi.advanceTimersByTimeAsync(30_000);
+			await expectation;
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
 	test("links caller cancellation to the model request", async () => {
 		const parent = new AbortController();
 		let markStarted: (() => void) | undefined;

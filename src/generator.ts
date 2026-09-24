@@ -6,7 +6,7 @@ import type { Exchange } from "./conversation.ts";
 import { validateModel } from "./models.ts";
 import { buildTitlePrompt, sanitizeTitle } from "./title.ts";
 
-const DEFAULT_TIMEOUT_MS = 15_000;
+const DEFAULT_TIMEOUT_MS = 45_000;
 
 export type CompleteFunction = typeof defaultComplete;
 
