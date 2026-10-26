@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Project-specific context. Global conventions: `~/.conventions/CONVENTIONS.md`.
+Project-specific context.
 
 ## What
 
